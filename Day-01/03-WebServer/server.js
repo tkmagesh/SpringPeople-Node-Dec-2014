@@ -1,35 +1,40 @@
 var http = require("http"),
 	fs = require("fs"),
+	url = require("url"),
+	calculator = require("./calculator"),
 	path = require("path");
+
+var staticResourceExtns = [".html", ".htm", ".css", ".js", ".txt", ".ico", ".jpg", ".png", ".xml", ".json"];
+
+var isStaticResource = function(resourceName){
+	return staticResourceExtns.indexOf(path.extname(resourceName)) !== -1;
+}
 
 var server = http.createServer(function(req,res){
 	var resource = req.url === "/" ? "/index.html" : req.url;
-	var resourcePath = path.join(__dirname, resource);
-	var fileExists = fs.existsSync(resourcePath);
-	if (fileExists){
-		/*fs.readFile(resourcePath, {encoding : "utf8"}, function(err,fileContents){
-			if (err){
-				res.statusCode = 500;
-				res.end();
-			} else {
-				res.write(fileContents);
-				res.end();
-			}
-		});*/
-		//The above code unnecessirily caches the file contents before invoking your callback.  instead 'streams' can be used to write the file contents (chunk) to the response as and when they are read from the file
-		var stream = fs.createReadStream(resourcePath, {encoding : "utf8"});
-		/*stream.on("data", function(chunk){
-			res.write(chunk);
-		});
-		stream.on("end", function(){
+	//parse the requrl 
+	req.url = url.parse(req.url, true);
+	var reqPathName = req.url.pathname;
+	if (isStaticResource(reqPathName)){
+		var resourcePath = path.join(__dirname, reqPathName);
+		var fileExists = fs.existsSync(resourcePath);
+		if (fileExists){
+			var stream = fs.createReadStream(resourcePath, {encoding : "utf8"});
+			stream.pipe(res);
+		} else {
+			res.statusCode = 404;
 			res.end();
-		});		*/
-		stream.pipe(res);
-	} else {
-		res.statusCode = 404;
+		}
+	} else if (reqPathName === "/calculator"){
+		var data = req.url.query,
+			number1 = parseInt(data.number1,10),
+			number2 = parseInt(data.number2,10);
+
+		var result = calculator[data.operation](number1,number2);
+		res.write(result.toString());
 		res.end();
+
 	}
-	
 });
 server.listen(8080);
 console.log("Server listening on port 8080!");
