@@ -1,0 +1,23 @@
+calculator.html
+	submit the data "method=get" "action=/calculator"
+
+server
+=======
+staticFiles = html, jpg, txt, css, js, img, ico, xml, json
+url.parse(req.url,true) => reqUrlObj
+
+checkStaticFile
+	url extn (use path.extname(reqUrlObj.pathname))
+
+if staticFile
+	serve the static file
+
+if "/calculator"
+	calculatorData = reqUrlObj.query
+	process using calculator
+	send the response to the client
+else
+	send 404
+end
+
+
